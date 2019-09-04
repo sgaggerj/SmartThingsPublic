@@ -55,7 +55,7 @@ metadata {
   capability "Button"
   capability "switchLevel"
   capability "switch"
-  attribute 'state', "string"
+  attribute "state", "string"
   command "refresh"
   command "poll"
   command "toggle"
