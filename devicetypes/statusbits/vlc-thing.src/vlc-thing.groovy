@@ -46,10 +46,10 @@ metadata {
         capability "Speech Synthesis"
         capability "Refresh"
         capability "Polling"
-        capability "Media Playback"
+
         // Custom attributes
         attribute "connection", "string"    // Connection status string
-        capability "Audio Notification"
+
         // Custom commands
         command "enqueue", ["string"]
         command "seek", ["number"]
@@ -58,7 +58,6 @@ metadata {
         command "playTextAndResume", ["string","number"]
         command "playTextAndRestore", ["string","number"]
         command "playSoundAndTrack", ["string","number","json_object","number"]
-        command "playTrack", ["string","number"]
         command "testTTS"
     }
 
@@ -378,7 +377,6 @@ def refresh() {
     }
 
     // Restart polling task if it's not run for 5 minutes
-    if (state.lastPoll==null) state.lastPoll=now()-10000;
     def elapsed = (now() - state.lastPoll) / 1000
     if (elapsed > 300) {
         log.warn "Restarting polling task..."
@@ -400,43 +398,6 @@ def seek(trackNumber) {
     def command = "command=pl_play&id=${trackNumber}"
     return apiCommand(command, 500)
 }
-
-
-def playTrack(uri, volume){
-  //log.debug "playTrackAndRestore(${uri},  ${volume})"
-
-    def currentStatus = device.currentValue('status')
-    if (volume==null) volume=currentVolume;
-    def currentMute = device.currentValue('mute')
-    def actions = []
-    if (currentStatus == 'playing') {
-        actions << apiCommand("command=pl_stop")
-        actions << delayHubAction(500)
-    }
-
-    if (volume) {
-        actions << setLevel(volume)
-    } else if (currentMute == 'muted') {
-        actions << unmute()
-        actions << delayHubAction(500)
-    }
-
-    actions << playTrack(uri)
-    actions << apiCommand("command=pl_stop")
-    actions << delayHubAction(500)
-
-    if (currentMute == 'muted') {
-        actions << mute()
-    } 
-
-    actions << apiGetStatus()
-    actions = actions.flatten()
-    //log.debug "actions: ${actions}"
-
-    return actions
- }
-
-
 
 def playTrackAndResume(uri, duration, volume = null) {
     //log.debug "playTrackAndResume(${uri}, ${duration}, ${volume})"
@@ -635,7 +596,7 @@ private def parseHttpResponse(Map data) {
 }
 
 private def parseTrackInfo(events, Map info) {
-    log.debug "parseTrackInfo(${events}, ${info})"
+    //log.debug "parseTrackInfo(${events}, ${info})"
 
     if (info.containsKey('category') && info.category.containsKey('meta')) {
         def meta = info.category.meta
